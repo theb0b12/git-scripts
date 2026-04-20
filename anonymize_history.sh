@@ -4,10 +4,10 @@
 # identity, then force-pushes to the new account.
 #
 # USAGE:
-#   ./anonymize_history.sh <repos_file> <new_owner> <new_name> <new_email>
+#   ./anonymize_history.sh <repos_file> <old_owner> <new_owner> <new_name> <new_email>
 #
 # EXAMPLE:
-#   ./anonymize_history.sh repos.txt theb0b "Bob" "bob@example.com"
+#   ./anonymize_history.sh repos.txt theb0b12 theb0b "Bob" "bob@example.com"
 #
 # REQUIREMENTS:
 #   - gh CLI authenticated as the NEW account
@@ -22,15 +22,16 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; }
 
 # ── Args ───────────────────────────────────────────────────────────────────────
-if [[ $# -lt 4 ]]; then
-  echo "Usage: $0 <repos_file> <new_owner> <new_name> <new_email>"
+if [[ $# -lt 5 ]]; then
+  echo "Usage: $0 <repos_file> <old_owner> <new_owner> <new_name> <new_email>"
   exit 1
 fi
 
 REPOS_FILE="$1"
-NEW_OWNER="$2"
-NEW_NAME="$3"
-NEW_EMAIL="$4"
+OLD_OWNER="$2"
+NEW_OWNER="$3"
+NEW_NAME="$4"
+NEW_EMAIL="$5"
 
 if [[ ! -f "$REPOS_FILE" ]]; then
   error "Repos file not found: $REPOS_FILE"
@@ -96,12 +97,17 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   # 3. Rewrite every branch and tag using git filter-branch
   #    Replaces author + committer name/email on all commits across all refs
   info "Rewriting commit history…"
-  if ! git filter-branch --force --env-filter "
-    export GIT_AUTHOR_NAME=\"${NEW_NAME}\"
-    export GIT_AUTHOR_EMAIL=\"${NEW_EMAIL}\"
-    export GIT_COMMITTER_NAME=\"${NEW_NAME}\"
-    export GIT_COMMITTER_EMAIL=\"${NEW_EMAIL}\"
-  " --tag-name-filter cat -- --all 2>&1; then
+  if ! git filter-branch --force \
+    --env-filter "
+      export GIT_AUTHOR_NAME=\"${NEW_NAME}\"
+      export GIT_AUTHOR_EMAIL=\"${NEW_EMAIL}\"
+      export GIT_COMMITTER_NAME=\"${NEW_NAME}\"
+      export GIT_COMMITTER_EMAIL=\"${NEW_EMAIL}\"
+    " \
+    --msg-filter "
+      sed -E \"s|'[^']*${OLD_OWNER}[^']*'|'|g; s|https://github\\.com/${OLD_OWNER}/[^ ]+||g\"
+    " \
+    --tag-name-filter cat -- --all 2>&1; then
     error "History rewrite failed — skipping."
     cd "$WORKDIR"
     FAILED=$(( FAILED + 1 )); FAILED_REPOS+=("$REPO_NAME"); continue
