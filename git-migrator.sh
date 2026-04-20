@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# migrate_repos.sh
+# git-migrator.sh
 # Migrates a list of GitHub repos to a new account/org.
 #
 # USAGE:
-#   ./migrate_repos.sh <repos_file> <new_owner>
+#   ./git-migrator.sh <repos_file> <new_owner>
 #
 # ARGS:
-#   repos_file   - Path to a file with one repo URL per line (blank lines/# comments ignored)
+#   repos_file   - Path to a file with one repo URL per line
 #   new_owner    - New GitHub username or org to migrate repos into
 #
 # REQUIREMENTS:
@@ -19,14 +19,14 @@
 
 set -euo pipefail
 
-# ── Colours ────────────────────────────────────────────────────────────────────
+# Colors ────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 info()    { echo -e "${CYAN}[INFO]${NC}  $*"; }
 success() { echo -e "${GREEN}[OK]${NC}    $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*"; }
 
-# ── Arg validation ─────────────────────────────────────────────────────────────
+# Arg validation ─────────────────────────────────────────────────────────────
 if [[ $# -lt 2 ]]; then
   echo "Usage: $0 <repos_file> <new_owner>"
   exit 1
@@ -40,7 +40,7 @@ if [[ ! -f "$REPOS_FILE" ]]; then
   exit 1
 fi
 
-# ── Dependency check ───────────────────────────────────────────────────────────
+# Dependency check
 for cmd in git gh; do
   if ! command -v "$cmd" &>/dev/null; then
     error "'$cmd' is not installed or not in PATH."
@@ -53,7 +53,7 @@ if ! gh auth status &>/dev/null; then
   exit 1
 fi
 
-# ── Grab auth token from gh CLI ───────────────────────────────────────────────
+# Grab auth token from gh CLI 
 GH_TOKEN=$(gh auth token)
 if [[ -z "$GH_TOKEN" ]]; then
   error "Could not retrieve GitHub token from gh CLI."
@@ -61,16 +61,16 @@ if [[ -z "$GH_TOKEN" ]]; then
 fi
 info "Auth token retrieved from gh CLI."
 
-# ── Scratch dir ────────────────────────────────────────────────────────────────
+# Scratch dir 
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 info "Working directory: $WORKDIR"
 
-# ── Counters ───────────────────────────────────────────────────────────────────
+# Counters
 TOTAL=0; PASSED=0; FAILED=0
 FAILED_REPOS=()
 
-# ── Main loop ──────────────────────────────────────────────────────────────────
+# Main loop 
 while IFS= read -r line || [[ -n "$line" ]]; do
   # Strip whitespace, skip blanks and comments
   line="${line#"${line%%[![:space:]]*}"}"
@@ -134,7 +134,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
 done < "$REPOS_FILE"
 
-# ── Summary ────────────────────────────────────────────────────────────────────
+# Summary
 echo ""
 info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 info "Migration complete."

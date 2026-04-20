@@ -9,7 +9,7 @@
 #   repos_file - Same file used for migration (one GitHub URL per line)
 #
 # REQUIREMENTS:
-#   - gh CLI authenticated as the OLD account (theb0b12)
+#   - gh CLI authenticated as the OLD account
 
 set -euo pipefail
 
